@@ -1,0 +1,5 @@
+[deps]
+CluGen = "48a2e8d8-1966-47f1-a982-993d59b21037"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Remark = "79b45036-8e38-5d04-8f49-b9fb23ff5a0d"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"

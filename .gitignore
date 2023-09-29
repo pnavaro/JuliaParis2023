@@ -1,0 +1,6 @@
+build/*
+Manifest.toml
+*.swp
+notebooks/.ipynb_checkpoints/
+.Rproj.user
+src/index.jl

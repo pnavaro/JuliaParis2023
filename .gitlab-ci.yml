@@ -1,0 +1,17 @@
+image: registry.plmlab.math.cnrs.fr/navaro/julia-rcall:1.8.5
+
+pages:
+  stage: deploy
+  script:
+    - apt update -y && apt install -y libharfbuzz-dev libfribidi-dev cmake
+    - Rscript install.R
+    - julia --project -e 'using Pkg; Pkg.instantiate()'
+    - julia --project --color=yes make.jl
+    - julia --project generate_nb.jl  # make notebooks
+    - mv build public 
+    - mv notebooks public
+  artifacts:
+    paths:
+      - public
+  only:
+  - master
