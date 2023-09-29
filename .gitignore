@@ -4,3 +4,4 @@ Manifest.toml
 notebooks/.ipynb_checkpoints/
 .Rproj.user
 src/index.jl
+.ipynb_checkpoints/ball_mapper-checkpoint.ipynb

@@ -200,9 +200,80 @@ nothing # hide
 
 ---
 
-# Outline
+# Topological Data Analysis : The Ball mapper example
 
-How to approximate a manifold with a set of $k$ points, from a noisy sample ?
+```@example paris
+points = hcat([[cos(θ), sin(θ)] for θ in LinRange(0, 2π, 61)[1:end-1]]...)
+scatter(points[1,:], points[2,:]; aspect_ratio=1, legend=false, title="Basic Circle")
+savefig("plot2.svg") # hide
+nothing # hide
+```
+
+![](plot2.svg)
+
+---
+
+```@example paris
+import LinearAlgebra: norm
+
+function find_centers( points, ϵ )
+    centers = Dict{Int, Int}() # dict of points {idx_v: idx_p, ... }
+    centers_counter = 1
+    
+    for (idx_p, p) in enumerate(eachcol(points))
+        
+        is_covered = false
+
+        for idx_v in keys(centers)
+            distance = norm(p .- points[:, centers[idx_v]])
+            if distance <= ϵ
+                is_covered = true
+                break
+            end
+        end
+
+        if !is_covered
+            centers[centers_counter] = idx_p
+            centers_counter += 1
+        end
+        
+    end
+    return centers
+end
+```
+
+---
+
+```@example paris
+ϵ = 0.25
+centers = find_centers( points, ϵ )
+idxs = collect(values(centers))
+scatter(points[1,:], points[2,:]; aspect_ratio=1,  label = "points", title="Basic Circle")
+scatter!(points[1,idxs], points[2,idxs]; aspect_ratio=1, label="centers")
+savefig("plot3.svg") # hide
+nothing # hide
+```
+
+![](plot3.svg)
+
+---
+
+```@example paris
+function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int}, ϵ)
+    points_covered_by_landmarks = Dict{Int,Vector{Int}}()
+    for idx_v in keys(centers)
+        points_covered_by_landmarks[idx_v] = Int[]
+        for (idx_p, p) in enumerate(eachcol(points))
+            distance = norm(p .- points[:,centers[idx_v]])
+            if distance <= ϵ
+                push!(points_covered_by_landmarks[idx_v], idx_p)
+            end
+        end
+    end
+    return sort(points_covered_by_landmarks)
+end
+points_covered_by_landmarks = compute_points_covered_by_landmarks( points, centers, ϵ)
+```
 
 ---
 
