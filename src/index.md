@@ -371,12 +371,38 @@ nothing # hide
 
 ---
 
+class: center, middle
+
 # Clustering with unions of ellipsoids 
 
 ![](assets/evol_ssniv.gif)
 
 ---
 
+class: center, middle
+
 # Package
 
 https://github.com/pnavaro/GeometricClusterAnalysis.jl
+
+---
+
+Test two columns
+
+.cols[
+.fifty[
+left
+
+- a
+- b
+- c
+]
+
+.fifty[
+right
+
+- a
+- b
+- c
+]
+]
