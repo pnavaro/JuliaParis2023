@@ -1,0 +1,637 @@
+
+
+
+
+
+# Who am I ?
+
+
+  * My name is *Pierre Navaro*
+  * Scientific Computing Engineer at Insitut de Recherche Mathématique de Rennes
+  * **Fortran 77 + PVM** : during my PhD 1998-2002 (Université du Havre)
+  * **Fortran 90-2003 + OpenMP-MPI** : Engineer in Strasbourg (2003-2015) at IRMA
+  * **Numpy + Cython, R + Rcpp** : Engineer in Rennes (2015-now) at IRMAR
+  * **Julia v1.0** since July 2018
+
+
+Slides : https://plmlab.math.cnrs.fr/navaro/JuliaParis2023
+
+
+This is a joint work with [*Claire Brécheteau*](https://brecheteau.perso.math.cnrs.fr/page/index.html)  from Ecole Centrale de Nantes.
+
+
+---
+
+
+
+
+
+
+# The $k$-means method
+
+
+$P$ distribution on $\mathbb{R}^d$
+
+
+$$
+\mathbf{c}= (c_1,c_2,\ldots,c_k) \in (\mathbb{R}^d)^k
+$$
+
+
+The optimal codebook $\mathbf{c}^*$ minimizes the $k$-means loss function 
+
+
+$$
+R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
+$$
+
+
+
+
+
+
+## Algorithm
+
+
+  * Initialize k centroids.
+  * Calculate the distance of every point to every centroid.
+  * Assign every point to a cluster, by choosing the centroid with the minimum distance to the point.
+  * Recalculate the centroids using the mean of the assigned points.
+  * Repeat the steps until reaching convergence.
+
+
+---
+
+
+
+
+
+
+# Lloyd’s algorithm method
+
+
+![](assets/kmeans_example_step00bis.png)
+
+
+---
+
+
+
+
+# Lloyd’s algorithm method
+
+
+![](assets/kmeans_example_step01bis.png)
+
+
+---
+
+
+
+
+# Lloyd’s algorithm method
+
+
+![](assets/kmeans_example_step11bis.png)
+
+
+---
+
+
+
+
+# Lloyd’s algorithm method
+
+
+![](assets/kmeans_example_step12bis.png)
+
+
+---
+
+
+
+
+# Lloyd’s algorithm method
+
+
+![](assets/kmeans_example_step22bis.png)
+
+
+---
+
+
+
+
+
+
+# Compute the distance
+
+
+```julia
+function euclidean(a::AbstractVector{T}, b::AbstractVector{T}) where {T<:AbstractFloat}
+
+    s = zero(T)
+    for i in eachindex(a)
+        s += (a[i] - b[i])^2
+    end
+    return sqrt(s)
+
+end
+```
+
+
+```
+euclidean (generic function with 1 method)
+```
+
+
+
+
+
+
+## Distances.jl
+
+
+```julia
+using Distances
+
+euclidean = Euclidean()
+```
+
+
+---
+
+
+
+
+
+
+## Initialize centers
+
+
+```julia
+using StatsBase
+
+function initialize_centers(data, k)
+    n = size(data, 1)
+    return [data[i, :] for i in sample(1:n, k, replace=false)]
+end
+```
+
+
+```
+initialize_centers (generic function with 1 method)
+```
+
+
+
+
+
+
+## Estimate cluster to all observations
+
+
+```julia
+function update_labels!( labels, data, centers)
+
+    for (i, obs) in enumerate(eachrow(data))
+        dist = [euclidean(obs, c) for c in centers]
+        labels[i] = argmin(dist)
+    end
+
+end
+```
+
+
+```
+update_labels! (generic function with 1 method)
+```
+
+
+---
+
+
+
+
+
+
+## Update centers using the mean
+
+
+```julia
+function update_centers!(centers, data, labels)
+
+    for k in eachindex(centers)
+        centers[k] = vec(mean(view(data, labels .== k, :), dims = 1))
+    end
+
+end
+```
+
+
+```
+update_centers! (generic function with 1 method)
+```
+
+
+---
+
+
+
+
+
+
+## Compute inertia
+
+
+```julia
+function compute_inertia(centers, labels, data)
+   inertia = 0.0
+   for k in eachindex(centers)
+       cluster = view(data, labels .== k, :)
+       inertia += sum(euclidean(p, centers[k])^2 for p in eachrow(cluster))
+   end
+   return inertia
+end
+```
+
+
+```
+compute_inertia (generic function with 1 method)
+```
+
+
+---
+
+
+
+
+
+
+# $k$-means
+
+
+```julia
+function kmeans( data, k; maxiter = 100, nstart = 10)
+
+    n, d = size(data)
+    opt_centers = [zeros(d) for i in 1:k]  # allocate optimal centers
+    labels = zeros(Int, n) # initialize labels
+    opt_inertia = Inf
+    for istart in 1:nstart
+        centers = initialize_centers(data, k)
+        for istep in 1:maxiter
+            old_centers = deepcopy(centers)
+            update_labels!( labels, data, centers)
+            update_centers!(centers, data, labels)
+            centers ≈ old_centers && break
+        end
+        inertia = compute_inertia(centers, labels, data)
+        if inertia < opt_inertia
+            opt_inertia = inertia
+            opt_centers .= deepcopy(centers)
+        end
+    end
+    update_labels!( labels, data, opt_centers)
+    return opt_centers, labels
+
+end
+```
+
+
+```
+kmeans (generic function with 1 method)
+```
+
+
+---
+
+
+```julia
+using Plots, CluGen
+
+o = clugen(2, 3, 1000, [1, 1], pi / 8, [10, 10], 10, 2, 1)
+centers, labels = kmeans(o.points, 3)
+scatter( o.points[:,1], o.points[:,2], group=labels)
+scatter!( Tuple.(centers), m = :star, ms = 10, c = :yellow, label = "centers")
+```
+
+
+![](plot1.svg)
+
+
+---
+
+
+
+
+
+
+# Approximation of a compact set
+
+
+![](assets/filtration1.png)
+
+
+---
+
+
+
+
+# Approximation of a compact set
+
+
+![](assets/filtration2.png)
+
+
+---
+
+
+
+
+# Approximation of a compact set
+
+
+![](assets/filtration3.png)
+
+
+---
+
+
+
+
+
+
+# Noisy circle
+
+
+```julia
+using Random
+
+rng = MersenneTwister(1234)
+
+function noisy_circle(rng, n, noise=0.05)
+    x = zeros(n)
+    y = zeros(n)
+    for i in 1:n
+        θ = 2π * rand(rng)
+        x[i] = cos(θ) + 2 * noise * (rand(rng) - 0.5)
+        y[i] = sin(θ) + 2 * noise * (rand(rng) - 0.5)
+    end
+    return vcat(x', y')
+end
+```
+
+
+```
+noisy_circle (generic function with 2 methods)
+```
+
+
+---
+
+
+```julia
+nc = noisy_circle(rng, 1000)
+points = hcat(nc, 0.5 .* nc )
+scatter(points[1,:], points[2,:]; aspect_ratio=1, legend=false, title="noisy circles")
+```
+
+
+![](plot2.svg)
+
+
+---
+
+
+```julia
+import LinearAlgebra: norm
+
+function find_centers( points, ϵ )
+    centers = Dict{Int, Int}() # dict of points
+    centers_counter = 1
+
+    for (idx_p, p) in enumerate(eachcol(points)) # Loop over points
+
+        is_covered = false
+
+        for idx_v in keys(centers) # Loop over centers
+            distance = norm(p .- points[:, centers[idx_v]])
+            if distance <= ϵ
+                is_covered = true
+                break
+            end
+        end
+
+        if !is_covered
+            centers[centers_counter] = idx_p
+            centers_counter += 1
+        end
+
+    end
+    return centers
+end
+
+ϵ = 0.2
+centers = find_centers( points, ϵ )
+```
+
+
+```
+Dict{Int64, Int64} with 35 entries:
+  5  => 6
+  16 => 18
+  20 => 90
+  35 => 1199
+  12 => 14
+  24 => 1002
+  28 => 1009
+  8  => 10
+  17 => 20
+  30 => 1013
+  1  => 1
+  19 => 31
+  22 => 695
+  23 => 1001
+  6  => 8
+  32 => 1033
+  11 => 13
+  9  => 11
+  31 => 1026
+  ⋮  => ⋮
+```
+
+
+---
+
+
+```julia
+idxs = collect(values(centers))
+p = scatter(points[1,idxs], points[2,idxs]; aspect_ratio=1, label="centers")
+function ball(h, k, r)
+    θ = LinRange(0, 2π, 500)
+    h .+ r * sin.(θ), k .+ r * cos.(θ)
+end
+for i in idxs
+    plot!(p, ball(points[1,i], points[2,i], ϵ), seriestype = [:shape,], lw = 0.5, c = :blue,
+            linecolor = :black, legend = false, fillalpha = 0.1, aspect_ratio = 1)
+end
+scatter!(p, points[1,:], points[2,:]; aspect_ratio=1, ms = 2)
+```
+
+
+![](plot3.svg)
+
+
+---
+
+
+```julia
+function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int}, ϵ)
+    points_covered_by_landmarks = Dict{Int,Vector{Int}}()
+    for idx_v in values(centers)
+        points_covered_by_landmarks[idx_v] = Int[]
+        for (idx_p, p) in enumerate(eachcol(points))
+            distance = norm(p .- points[:,idx_v])
+            if distance <= ϵ
+                push!(points_covered_by_landmarks[idx_v], idx_p)
+            end
+        end
+    end
+    return sort(points_covered_by_landmarks)
+end
+points_covered_by_landmarks = compute_points_covered_by_landmarks( points, centers, ϵ)
+```
+
+
+```
+OrderedCollections.OrderedDict{Int64, Vector{Int64}} with 35 entries:
+  1  => [1, 4, 22, 36, 40, 66, 70, 92, 109, 121  …  888, 896, 907, 914, 924, 92…
+  2  => [2, 39, 48, 53, 128, 138, 143, 161, 162, 173  …  869, 885, 901, 905, 91…
+  3  => [3, 23, 42, 62, 98, 108, 122, 124, 165, 177  …  860, 872, 889, 902, 918…
+  5  => [5, 7, 27, 61, 88, 101, 117, 133, 169, 186  …  767, 776, 797, 807, 808,…
+  6  => [6, 26, 28, 38, 84, 131, 150, 152, 184, 186  …  847, 850, 873, 884, 913…
+  8  => [8, 37, 59, 72, 75, 82, 85, 96, 103, 114  …  871, 895, 904, 912, 928, 9…
+  9  => [9, 25, 32, 58, 93, 125, 130, 134, 147, 148  …  876, 891, 899, 922, 939…
+  10 => [10, 19, 44, 49, 57, 67, 69, 77, 89, 136  …  882, 903, 919, 929, 937, 9…
+  11 => [11, 37, 51, 59, 75, 81, 82, 87, 95, 96  …  862, 866, 887, 895, 900, 92…
+  12 => [12, 27, 43, 71, 76, 103, 110, 112, 113, 119  …  870, 871, 874, 877, 93…
+  13 => [13, 35, 55, 78, 99, 102, 141, 191, 195, 210  …  898, 908, 909, 916, 93…
+  14 => [14, 56, 80, 86, 153, 167, 172, 181, 207, 209  …  754, 771, 792, 809, 8…
+  15 => [15, 24, 33, 41, 57, 67, 69, 77, 94, 100  …  830, 833, 859, 886, 903, 9…
+  16 => [16, 26, 28, 45, 54, 62, 73, 84, 123, 124  …  875, 880, 894, 897, 918, …
+  17 => [17, 33, 39, 47, 50, 74, 94, 100, 111, 118  …  886, 905, 906, 931, 942,…
+  18 => [18, 29, 46, 64, 65, 68, 97, 105, 163, 174  …  782, 863, 892, 910, 911,…
+  20 => [20, 21, 52, 60, 79, 99, 104, 106, 115, 120  …  890, 893, 898, 917, 920…
+  30 => [19, 30, 34, 49, 63, 91, 129, 146, 149, 178  …  836, 841, 855, 879, 882…
+  31 => [21, 22, 31, 36, 66, 70, 83, 92, 104, 109  …  799, 804, 914, 917, 920, …
+  ⋮  => ⋮
+```
+
+
+---
+
+
+```julia
+using RecipesBase
+
+@userplot GraphPlot
+
+@recipe function f(gp::GraphPlot)
+
+    points, points_covered_by_landmarks = gp.args
+
+    aspect_ratio := 1
+    idxs = collect(keys(points_covered_by_landmarks)) # centers
+
+    @series begin
+        seriestype := :scatter
+        points[1,idxs], points[2,idxs]
+    end
+
+    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
+        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
+            x1, y1 = points[:,idx_v]
+            x2, y2 = points[:,idx_u]
+            @series begin
+                color := :black
+                legend := false
+                [x1, x2], [y1, y2]
+            end
+        end
+    end
+
+end
+```
+
+
+---
+
+
+```julia
+graphplot(points, points_covered_by_landmarks)
+```
+
+
+![](plot4.svg)
+
+
+---
+
+
+class: center, middle
+
+
+
+
+
+
+# Clustering with unions of ellipsoids
+
+
+![](assets/evol_ssniv.gif)
+
+
+---
+
+
+class: center, middle
+
+
+
+
+
+
+# Package
+
+
+https://github.com/pnavaro/GeometricClusterAnalysis.jl
+
+
+---
+
+
+Test two columns
+
+
+.cols[ .fifty[ left
+
+
+  * a
+  * b
+  * c
+
+
+]
+
+
+.fifty[ right
+
+
+  * a
+  * b
+  * c
+
+
+] ]
+
