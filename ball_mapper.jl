@@ -38,7 +38,7 @@ function noisy_circle(rng, n, noise=0.05)
     return vcat(x', y')
 end
 
-rng = MersenneTwister(1234)
+rng = MersenneTwister(72)
 
 nc = noisy_circle(rng, 1000)
 points = hcat(nc, 0.5 .* nc )
@@ -83,11 +83,11 @@ end
 scatter!(points[1,:], points[2,:]; aspect_ratio=1,  label = "points", ms = 2)
 
 function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int}, ϵ)
-    points_covered_by_landmarks = Dict{Int,Vector{Int}}()
-    for idx_v in values(centers)
+    points_covered_by_landmarks = Vector{Int}[]
+    for idx_v in keys(centers)
         points_covered_by_landmarks[idx_v] = Int[]
         for (idx_p, p) in enumerate(eachcol(points))
-            distance = norm(p .- points[:,idx_v])
+            distance = norm(p .- points[:,centers[idx_v]])
             if distance <= ϵ
                 push!(points_covered_by_landmarks[idx_v], idx_p)
             end
@@ -97,37 +97,95 @@ function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int},
 end
 points_covered_by_landmarks = compute_points_covered_by_landmarks( points, centers, ϵ)
 
+function compute_graph(points_covered_by_landmarks)
+    edges = Tuple{Int,Int}[]
+    idxs = collect(keys(points_covered_by_landmarks)) # centers
+    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
+        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
+            push!(edges, (idx_v,idx_u))
+        end
+    end
+    edges
+end
+compute_graph(points_covered_by_landmarks)
+
 using RecipesBase
 
-@userplot GraphPlot
+@userplot EdgesPlot
 
-@recipe function f(gp::GraphPlot)
-
-    points, points_covered_by_landmarks = gp.args
-    
+@recipe function f(gp::EdgesPlot)
+    points, centers, edges = gp.args
+    idxs = values(centers)
     aspect_ratio := 1
-    idxs = collect(keys(points_covered_by_landmarks)) # centers
     
     @series begin
         seriestype := :scatter
         points[1,idxs], points[2,idxs]
     end
-
-    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
-        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
-            x1, y1 = points[:,idx_v]
-            x2, y2 = points[:,idx_u]
-            @series begin
-                color := :black
-                legend := false
-                [x1, x2], [y1, y2]
-            end
+    for (e1,e2) in edges
+        x1, y1 = points[:,centers[e1]]
+        x2, y2 = points[:,centers[e2]]
+        @series begin
+            color := :black
+            legend := false
+            [x1, x2], [y1, y2]
         end
     end
 
 end
 
-graphplot(points, points_covered_by_landmarks)
+edgesplot(points, centers, points_covered_by_landmarks)
 
+function compute_labels(points, points_covered_by_landmarks)
+    
+    labels = zeros(Int, size(points,2))
+    idxs = collect(keys(points_covered_by_landmarks)) # centers
+    color = 1
+    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
+        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
+            labels[idx_v] = color
+            labels[idx_u] = color
+        else
+            color += 1
+        end
+    end
+    labels
+end
+
+labels = compute_labels(points, points_covered_by_landmarks)
+
+
+idxs = collect(keys(points_covered_by_landmarks))
+scatter(points[1,idxs], points[2,idxs], c = labels[idxs], aspect_ratio=1)
+
+function compute_colors(points, points_covered_by_landmarks)
+    n = size(points, 2)
+    colors = zeros(Int, n)
+    for (i, cluster) in enumerate(values(points_covered_by_landmarks))
+        colors[cluster] .= i
+    end
+    return colors
+end
+colors = compute_colors(points, points_covered_by_landmarks)
+scatter(points[1,:], points[2,:], group = colors, aspect_ratio=1)
+
+using Graphs
+
+function ball_mapper_graph(points_covered_by_landmarks)
+    idxs = collect(keys(points_covered_by_landmarks))
+    nv = length(idxs)
+    graph = Graph(nv)
+    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
+        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
+            add_edge!( graph, idx_v, idx_u )
+        end
+    end
+    return graph
+end   
+
+g = ball_mapper_graph(points_covered_by_landmarks)
+
+using GraphPlot
+gplot(g)
 
 
