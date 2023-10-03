@@ -13,8 +13,7 @@ julia --project
 ```julia
 julia> using Pkg
 julia> Pkg.instantiate()
-julia> include("generate_nb.jl")
 julia> using IJulia
-julia> notebook(dir=joinpath(pwd(),"notebooks"))
+julia> notebook()
 [ Info: running ...
 ```
