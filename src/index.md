@@ -43,11 +43,15 @@ R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
 
 ---
 
+class: center, middle
+
 # Lloyd’s algorithm method 
 
 ![](assets/kmeans_example_step00bis.png)
 
 ---
+
+class: center, middle
 
 # Lloyd’s algorithm method 
 
@@ -55,11 +59,16 @@ R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
 
 ---
 
+class: center, middle
+
 # Lloyd’s algorithm method 
+
 
 ![](assets/kmeans_example_step11bis.png)
 
 ---
+
+class: center, middle
 
 # Lloyd’s algorithm method 
 
@@ -67,11 +76,12 @@ R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
 
 ---
 
+class: center, middle
+
 # Lloyd’s algorithm method
  
  ![](assets/kmeans_example_step22bis.png)
  
-
 ---
 
 # Compute the distance
@@ -200,11 +210,15 @@ nothing # hide
 
 ---
 
+class: center, middle
+
 # Approximation of a compact set
 
 ![](assets/filtration1.png)
 
 ---
+
+class: center, middle
 
 # Approximation of a compact set
 
@@ -212,18 +226,22 @@ nothing # hide
 
 ---
 
+class: center, middle
+
 # Approximation of a compact set
 
 ![](assets/filtration3.png)
 
 ---
 
+class: middle
+
 # Noisy circle
 
 ```@example paris
 using Random
 
-rng = MersenneTwister(1234)
+rng = MersenneTwister(72)
 
 function noisy_circle(rng, n, noise=0.05)
     x = zeros(n)
@@ -281,7 +299,6 @@ end
 
 ϵ = 0.2
 centers = find_centers( points, ϵ )
-
 ```
 
 ---
@@ -371,6 +388,47 @@ nothing # hide
 
 ---
 
+.cols[
+.fifty[
+
+```julia
+n = length(f)
+v = sortperm(f, rev = true) # sort vertices using f
+sort!(f, rev = true) # sort f
+v_inv = Dict(zip(v, 1:n)) 
+G = [[v_inv[i] for i in subset] for subset in graph[v]]
+𝒰 = IntDisjointSets(n)
+for i = eachindex(v)
+    𝒩 = [j for j in G[i] if j < i]
+    if length(𝒩) != 0
+        g = 𝒩[argmax(view(f, 𝒩))] 
+        e_i = find_root!(𝒰, g) 
+        e_i = union!(𝒰, e_i, i) 
+        for j in 𝒩 
+            e_j = find_root!(𝒰, j) 
+            if e_i != e_j && min(f[e_i], f[e_j]) <= f[i] + τ 
+                if f[e_j] <= f[e_i]
+                    e_i = union!(𝒰, e_i, e_j)
+                else
+                    e_i = union!(𝒰, e_j, e_i)
+                end
+            end
+        end
+    end
+end
+```
+
+]
+
+.fifty[
+
+![tomato](assets/algorithm-tomato.png)
+
+]
+]
+
+---
+
 class: center, middle
 
 # Clustering with unions of ellipsoids 
@@ -381,28 +439,9 @@ class: center, middle
 
 class: center, middle
 
-# Package
+# Packages in progress
 
 https://github.com/pnavaro/GeometricClusterAnalysis.jl
 
----
+https://github.com/pnavaro/ClusteringToMATo.jl
 
-Test two columns
-
-.cols[
-.fifty[
-left
-
-- a
-- b
-- c
-]
-
-.fifty[
-right
-
-- a
-- b
-- c
-]
-]
