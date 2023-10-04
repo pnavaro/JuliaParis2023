@@ -7,7 +7,7 @@
 #       extension: .jl
 #       format_name: nomarker
 #       format_version: '1.0'
-#       jupytext_version: 1.14.4
+#       jupytext_version: 1.15.1
 #   kernelspec:
 #     display_name: Julia 1.9.3
 #     language: julia
@@ -30,18 +30,17 @@ using Statistics
 function noisy_circle(rng, n, noise=0.05)
     x = zeros(n)
     y = zeros(n)
+    θ = LinRange(0, 2π, n+1)[1:end-1]
     for i in 1:n
-        θ = 2π * rand(rng)
-        x[i] = cos(θ) + 2 * noise * (rand(rng) - 0.5)
-        y[i] = sin(θ) + 2 * noise * (rand(rng) - 0.5)
+        x[i] = cos(θ[i]) + 2 * noise * (rand(rng) - 0.5)
+        y[i] = sin(θ[i]) + 2 * noise * (rand(rng) - 0.5)
     end
     return vcat(x', y')
 end
 
 rng = MersenneTwister(72)
 
-nc = noisy_circle(rng, 1000)
-points = hcat(nc, 0.5 .* nc )
+points = hcat(noisy_circle(rng, 1000), 0.5 .* noisy_circle(rng, 500) )
 scatter(points[1,:], points[2,:]; aspect_ratio=1, legend=false, title="noisy circles")
 
 function find_centers( points, ϵ )
@@ -83,7 +82,7 @@ end
 scatter!(points[1,:], points[2,:]; aspect_ratio=1,  label = "points", ms = 2)
 
 function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int}, ϵ)
-    points_covered_by_landmarks = Vector{Int}[]
+    points_covered_by_landmarks = Dict{Int,Vector{Int}}()
     for idx_v in keys(centers)
         points_covered_by_landmarks[idx_v] = Int[]
         for (idx_p, p) in enumerate(eachcol(points))
@@ -97,32 +96,37 @@ function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int},
 end
 points_covered_by_landmarks = compute_points_covered_by_landmarks( points, centers, ϵ)
 
-function compute_graph(points_covered_by_landmarks)
+function compute_edges(points_covered_by_landmarks)
     edges = Tuple{Int,Int}[]
     idxs = collect(keys(points_covered_by_landmarks)) # centers
-    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
-        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
-            push!(edges, (idx_v,idx_u))
+    for (i, idx_v) in enumerate(idxs[1:end-1])
+        p_v = points_covered_by_landmarks[idx_v]
+        for idx_u in idxs[i+1:end]
+            if !isdisjoint( p_v, points_covered_by_landmarks[idx_u])
+                push!(edges, (idx_v,idx_u))
+            end
         end
     end
     edges
 end
-compute_graph(points_covered_by_landmarks)
+
+
+@show edges
 
 using RecipesBase
 
 @userplot EdgesPlot
 
 @recipe function f(gp::EdgesPlot)
-    points, centers, edges = gp.args
-    idxs = values(centers)
+    points, centers, points_covered_by_landmarks = gp.args
+    idxs = collect(values(centers))
     aspect_ratio := 1
     
     @series begin
         seriestype := :scatter
         points[1,idxs], points[2,idxs]
     end
-    for (e1,e2) in edges
+    for (e1,e2) in compute_edges(points_covered_by_landmarks)
         x1, y1 = points[:,centers[e1]]
         x2, y2 = points[:,centers[e2]]
         @series begin
@@ -131,61 +135,35 @@ using RecipesBase
             [x1, x2], [y1, y2]
         end
     end
-
 end
 
 edgesplot(points, centers, points_covered_by_landmarks)
 
-function compute_labels(points, points_covered_by_landmarks)
-    
-    labels = zeros(Int, size(points,2))
-    idxs = collect(keys(points_covered_by_landmarks)) # centers
-    color = 1
-    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
-        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
-            labels[idx_v] = color
-            labels[idx_u] = color
-        else
-            color += 1
+sort(centers)
+
+function compute_colors( points, points_covered_by_landmarks)
+    edges = compute_edges(points_covered_by_landmarks)
+    nc = length(keys(points_covered_by_landmarks))
+    center_colors = collect(1:nc)
+    for i in 1:nc
+        for (e1,e2) in edges
+            center_colors[e2] = center_colors[e1]
         end
     end
-    labels
-end
-
-labels = compute_labels(points, points_covered_by_landmarks)
-
-
-idxs = collect(keys(points_covered_by_landmarks))
-scatter(points[1,idxs], points[2,idxs], c = labels[idxs], aspect_ratio=1)
-
-function compute_colors(points, points_covered_by_landmarks)
     n = size(points, 2)
     colors = zeros(Int, n)
-    for (i, cluster) in enumerate(values(points_covered_by_landmarks))
-        colors[cluster] .= i
-    end
-    return colors
-end
-colors = compute_colors(points, points_covered_by_landmarks)
-scatter(points[1,:], points[2,:], group = colors, aspect_ratio=1)
-
-using Graphs
-
-function ball_mapper_graph(points_covered_by_landmarks)
-    idxs = collect(keys(points_covered_by_landmarks))
-    nv = length(idxs)
-    graph = Graph(nv)
-    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
-        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
-            add_edge!( graph, idx_v, idx_u )
+    for c in keys(centers)
+        for (e1, e2) in edges
+            colors[points_covered_by_landmarks[c]] .= center_colors[c]
         end
     end
-    return graph
-end   
+    colors
+end
 
-g = ball_mapper_graph(points_covered_by_landmarks)
+colors = compute_colors( points, points_covered_by_landmarks)
 
-using GraphPlot
-gplot(g)
+scatter(points[1,:], points[2, :], group = colors, aspect_ratio=1)
+
+
 
 

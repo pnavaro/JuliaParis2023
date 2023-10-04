@@ -4,6 +4,8 @@
 
  - Scientific Computing Engineer at Insitut de Recherche Mathématique de Rennes
 
+ - Staff member of [Groupe Calcul](https://calcul.math.cnrs.fr) which promote exchanges within the scientific computing community.
+
  - **Fortran 77 + PVM** : during my PhD 1998-2002 (Université du Havre)
 
  - **Fortran 90-2003 + OpenMP-MPI** : Engineer in Strasbourg (2003-2015) at IRMA
@@ -12,10 +14,13 @@
 
  - **Julia v1.0** since July 2018
 
+ French community newsletter about Julia language : https://pnavaro.github.io/NouvellesJulia
+
  Slides : https://plmlab.math.cnrs.fr/navaro/JuliaParis2023
 
  This is a joint work with [*Claire Brécheteau*](https://brecheteau.perso.math.cnrs.fr/page/index.html)
  from Ecole Centrale de Nantes.
+
 
 ---
 
@@ -33,7 +38,9 @@ The optimal codebook $\mathbf{c}^*$ minimizes the $k$-means loss function
 R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
 ```
 
-## Algorithm
+---
+
+# Algorithm
 
 - Initialize k centroids.
 - Calculate the distance of every point to every centroid.
@@ -63,7 +70,6 @@ class: center, middle
 
 # Lloyd’s algorithm method 
 
-
 ![](assets/kmeans_example_step11bis.png)
 
 ---
@@ -80,7 +86,7 @@ class: center, middle
 
 # Lloyd’s algorithm method
  
- ![](assets/kmeans_example_step22bis.png)
+![](assets/kmeans_example_step22bis.png)
  
 ---
 
@@ -90,9 +96,11 @@ class: center, middle
 function euclidean(a::AbstractVector{T}, b::AbstractVector{T}) where {T<:AbstractFloat}
 
     s = zero(T)
+
     for i in eachindex(a)
         s += (a[i] - b[i])^2
     end
+
     return sqrt(s)
 
 end
@@ -108,25 +116,37 @@ euclidean = Euclidean()
 
 ---
 
-## Initialize centers
+class: middle
+
+# Initialize centers
 
 ```@example paris
 using StatsBase
 
 function initialize_centers(data, k) 
+
     n = size(data, 1)
+
     return [data[i, :] for i in sample(1:n, k, replace=false)]
+
 end
 ```
 
-## Estimate cluster to all observations
+---
+
+class: middle
+
+# Estimate cluster to all observations
 
 ```@example paris
 function update_labels!( labels, data, centers)
 
     for (i, obs) in enumerate(eachrow(data))
+
         dist = [euclidean(obs, c) for c in centers]
+
         labels[i] = argmin(dist)
+
     end
 
 end
@@ -141,7 +161,9 @@ end
 function update_centers!(centers, data, labels)
     
     for k in eachindex(centers)
+
         centers[k] = vec(mean(view(data, labels .== k, :), dims = 1))
+
     end
 
 end
@@ -153,12 +175,19 @@ end
 
 ```@example paris
 function compute_inertia(centers, labels, data)
+
    inertia = 0.0
+
    for k in eachindex(centers)
+
        cluster = view(data, labels .== k, :)
+
        inertia += sum(euclidean(p, centers[k])^2 for p in eachrow(cluster))
+
    end
+
    return inertia
+
 end
 ```
 
@@ -210,30 +239,6 @@ nothing # hide
 
 ---
 
-class: center, middle
-
-# Approximation of a compact set
-
-![](assets/filtration1.png)
-
----
-
-class: center, middle
-
-# Approximation of a compact set
-
-![](assets/filtration2.png)
-
----
-
-class: center, middle
-
-# Approximation of a compact set
-
-![](assets/filtration3.png)
-
----
-
 class: middle
 
 # Noisy circle
@@ -244,23 +249,27 @@ using Random
 rng = MersenneTwister(72)
 
 function noisy_circle(rng, n, noise=0.05)
+
     x = zeros(n)
     y = zeros(n)
+    θ = LinRange(0, 2π, n+1)[1:end-1]
+
     for i in 1:n
-        θ = 2π * rand(rng)
-        x[i] = cos(θ) + 2 * noise * (rand(rng) - 0.5)
-        y[i] = sin(θ) + 2 * noise * (rand(rng) - 0.5)
+        x[i] = cos(θ[i]) + 2 * noise * (rand(rng) - 0.5)
+        y[i] = sin(θ[i]) + 2 * noise * (rand(rng) - 0.5)
     end
+
     return vcat(x', y')
+
 end
 ```
-
 ---
 
 ```@example paris
-nc = noisy_circle(rng, 1000)
-points = hcat(nc, 0.5 .* nc )
-scatter(points[1,:], points[2,:]; aspect_ratio=1, legend=false, title="noisy circles")
+points = hcat(noisy_circle(rng, 1000) , 0.5 .* noisy_circle(rng, 500) )
+centers, labels = kmeans(points', 2)
+scatter( points[1,:], points[2,:], group=labels)
+scatter!( Tuple.(centers), m = :star, ms = 10, c = :yellow, aspect_ratio=1)
 savefig("plot2.svg") # hide
 nothing # hide
 ```
@@ -268,6 +277,52 @@ nothing # hide
 ![](plot2.svg)
 
 ---
+
+# Topological data analysis
+
+
+# *Data have shape, shape has meaning, meaning brings value.*
+
+
+# Point cloud => Topological descriptor => Inference
+
+
+---
+
+
+class: center, middle
+
+# Build filtered complex of the point cloud
+
+![](assets/filtration1.png)
+
+---
+
+class: center, middle
+
+# Build filtered complex of the point cloud
+
+![](assets/filtration2.png)
+
+---
+
+class: center, middle
+
+# Build filtered complex of the point cloud
+
+![](assets/filtration3.png)
+
+
+---
+
+class: center, middle
+
+# Example: The Ball-Mapper algorithm
+
+[Davide Gurnari](https://dioscuri-tda.org/Paris_TDA_Tutorial_2021.html)
+
+---
+
 
 ```@example paris
 import LinearAlgebra: norm
@@ -305,17 +360,15 @@ centers = find_centers( points, ϵ )
 
 
 ```@example paris
-idxs = collect(values(centers))
-p = scatter(points[1,idxs], points[2,idxs]; aspect_ratio=1, label="centers")
 function ball(h, k, r)
     θ = LinRange(0, 2π, 500)
     h .+ r * sin.(θ), k .+ r * cos.(θ)
 end
-for i in idxs
-    plot!(p, ball(points[1,i], points[2,i], ϵ), seriestype = [:shape,], lw = 0.5, c = :blue, 
-            linecolor = :black, legend = false, fillalpha = 0.1, aspect_ratio = 1)
+scatter(points[1,:], points[2,:]; aspect_ratio=1,  label = "points", ms = 2)
+for i in values(centers)
+    plot!(ball(points[1,i], points[2,i], ϵ), seriestype = [:shape,], lw = 0.5, c = :blue, 
+            linecolor = :black, legend = false, fillalpha = 0.1)
 end
-scatter!(p, points[1,:], points[2,:]; aspect_ratio=1, ms = 2)
 savefig("plot3.svg") # hide
 nothing # hide
 ```
@@ -326,20 +379,62 @@ nothing # hide
 ---
 
 ```@example paris
-function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int}, ϵ)
+function compute_points_covered_by_landmarks( points, centers, ϵ)
+
     points_covered_by_landmarks = Dict{Int,Vector{Int}}()
-    for idx_v in values(centers)
+
+    for idx_v in keys(centers)
+
         points_covered_by_landmarks[idx_v] = Int[]
+
         for (idx_p, p) in enumerate(eachcol(points))
-            distance = norm(p .- points[:,idx_v])
+
+            distance = norm(p .- points[:,centers[idx_v]])
+
             if distance <= ϵ
                 push!(points_covered_by_landmarks[idx_v], idx_p)
             end
+
         end
+
     end
+
     return sort(points_covered_by_landmarks)
+
 end
+
 points_covered_by_landmarks = compute_points_covered_by_landmarks( points, centers, ϵ)
+```
+
+----
+
+```@example paris
+function compute_edges(points_covered_by_landmarks)
+
+    edges = Tuple{Int,Int}[]
+
+    idxs = collect(keys(points_covered_by_landmarks)) # centers
+
+    for (i, idx_v) in enumerate(idxs[1:end-1])
+
+        p_v = points_covered_by_landmarks[idx_v]
+
+        for idx_u in idxs[i+1:end]
+
+            if !isdisjoint( p_v, points_covered_by_landmarks[idx_u])
+
+                push!(edges, (idx_v,idx_u))
+
+            end
+
+        end
+
+    end
+    edges
+end
+
+edges = compute_edges(points_covered_by_landmarks)
+
 ```
 
 ----
@@ -347,44 +442,104 @@ points_covered_by_landmarks = compute_points_covered_by_landmarks( points, cente
 ```@example paris
 using RecipesBase
 
-@userplot GraphPlot
+@userplot EdgesPlot
 
-@recipe function f(gp::GraphPlot)
+@recipe function f(gp::EdgesPlot)
 
-    points, points_covered_by_landmarks = gp.args
-    
+    points, centers, points_covered_by_landmarks = gp.args
+    idxs = collect(values(centers))
     aspect_ratio := 1
-    idxs = collect(keys(points_covered_by_landmarks)) # centers
     
     @series begin
+
         seriestype := :scatter
         points[1,idxs], points[2,idxs]
+
     end
 
-    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
-        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
-            x1, y1 = points[:,idx_v]
-            x2, y2 = points[:,idx_u]
-            @series begin
-                color := :black
-                legend := false
-                [x1, x2], [y1, y2]
-            end
+    for (e1,e2) in compute_edges(points_covered_by_landmarks)
+
+        x1, y1 = points[:,centers[e1]]
+        x2, y2 = points[:,centers[e2]]
+
+        @series begin
+            color --> :black
+            legend := false
+            [x1, x2], [y1, y2]
         end
-    end
 
+    end
 end
 ```
 
-----
+.footnote[[Daniel Schwabeneder - How do Recipes actually work?](https://daschw.github.io/recipes/)]
+
+---
+
+class: center, middle
 
 ```@example paris
-graphplot(points, points_covered_by_landmarks)
+edgesplot(points, centers, points_covered_by_landmarks)
 savefig("plot4.svg") # hide
 nothing # hide
 ```
 
 ![](plot4.svg)
+
+---
+
+```@example paris
+function compute_colors( points, points_covered_by_landmarks)
+
+    edges = compute_edges(points_covered_by_landmarks)
+    nc = length(keys(points_covered_by_landmarks))
+    center_colors = collect(1:nc)
+
+    for i in 1:nc
+        for (e1,e2) in edges
+            center_colors[e2] = center_colors[e1]
+        end
+    end
+
+    n = size(points, 2)
+    colors = zeros(Int, n)
+
+    for c in keys(centers)
+        for (e1, e2) in edges
+            colors[points_covered_by_landmarks[c]] .= center_colors[c]
+        end
+    end
+
+    colors
+
+end
+
+colors = compute_colors( points, points_covered_by_landmarks)
+```
+
+---
+
+```@example paris
+scatter(points[1,:], points[2, :], group = colors, aspect_ratio=1, legend = false)
+savefig("plot5.svg") # hide
+nothing # hide
+```
+
+![](plot5.svg)
+
+---
+
+# TDA algorithms 
+
+- Cluster merging phase using density map. 
+
+- Use of topological persistence to guide the merging of clusters. 
+
+[Ripserer.jl](https://mtsch.github.io/Ripserer.jl/dev/generated/stability/)
+
+[TDA example in Julia](https://github.com/pnavaro/IntroToTDA.jl/blob/main/Trees_In_Philly_Old_City.ipynb)
+
+[Steve Oudot et al - Topological Mode Analysis Tool](https://geometrica.saclay.inria.fr/data/Steve.Oudot/clustering/)
 
 ---
 
@@ -427,6 +582,7 @@ end
 ]
 ]
 
+.footnote[[ClusteringToMaTo.jl](https://github.com/pnavaro/ClusteringToMATo.jl)]
 ---
 
 class: center, middle
@@ -435,13 +591,6 @@ class: center, middle
 
 ![](assets/evol_ssniv.gif)
 
----
+.footnote[[GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl)]
 
-class: center, middle
-
-# Packages in progress
-
-https://github.com/pnavaro/GeometricClusterAnalysis.jl
-
-https://github.com/pnavaro/ClusteringToMATo.jl
 
