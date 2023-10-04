@@ -8,10 +8,14 @@
 
   * My name is *Pierre Navaro*
   * Scientific Computing Engineer at Insitut de Recherche Mathématique de Rennes
+  * Staff member of [Groupe Calcul](https://calcul.math.cnrs.fr) which promote exchanges within the scientific computing community.
   * **Fortran 77 + PVM** : during my PhD 1998-2002 (Université du Havre)
   * **Fortran 90-2003 + OpenMP-MPI** : Engineer in Strasbourg (2003-2015) at IRMA
   * **Numpy + Cython, R + Rcpp** : Engineer in Rennes (2015-now) at IRMAR
   * **Julia v1.0** since July 2018
+
+
+French community newsletter about Julia language : https://pnavaro.github.io/NouvellesJulia
 
 
 Slides : https://plmlab.math.cnrs.fr/navaro/JuliaParis2023
@@ -46,11 +50,14 @@ R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
 $$
 
 
+---
 
 
 
 
-## Algorithm
+
+
+# Algorithm
 
 
   * Initialize k centroids.
@@ -146,9 +153,11 @@ class: center, middle
 function euclidean(a::AbstractVector{T}, b::AbstractVector{T}) where {T<:AbstractFloat}
 
     s = zero(T)
+
     for i in eachindex(a)
         s += (a[i] - b[i])^2
     end
+
     return sqrt(s)
 
 end
@@ -177,19 +186,25 @@ euclidean = Euclidean()
 ---
 
 
+class: middle
 
 
 
 
-## Initialize centers
+
+
+# Initialize centers
 
 
 ```julia
 using StatsBase
 
 function initialize_centers(data, k)
+
     n = size(data, 1)
+
     return [data[i, :] for i in sample(1:n, k, replace=false)]
+
 end
 ```
 
@@ -199,19 +214,28 @@ initialize_centers (generic function with 1 method)
 ```
 
 
+---
+
+
+class: middle
 
 
 
 
-## Estimate cluster to all observations
+
+
+# Estimate cluster to all observations
 
 
 ```julia
 function update_labels!( labels, data, centers)
 
     for (i, obs) in enumerate(eachrow(data))
+
         dist = [euclidean(obs, c) for c in centers]
+
         labels[i] = argmin(dist)
+
     end
 
 end
@@ -237,7 +261,9 @@ update_labels! (generic function with 1 method)
 function update_centers!(centers, data, labels)
 
     for k in eachindex(centers)
+
         centers[k] = vec(mean(view(data, labels .== k, :), dims = 1))
+
     end
 
 end
@@ -261,12 +287,19 @@ update_centers! (generic function with 1 method)
 
 ```julia
 function compute_inertia(centers, labels, data)
+
    inertia = 0.0
+
    for k in eachindex(centers)
+
        cluster = view(data, labels .== k, :)
+
        inertia += sum(euclidean(p, centers[k])^2 for p in eachrow(cluster))
+
    end
+
    return inertia
+
 end
 ```
 
@@ -338,50 +371,6 @@ scatter!( Tuple.(centers), m = :star, ms = 10, c = :yellow, label = "centers")
 ---
 
 
-class: center, middle
-
-
-
-
-
-
-# Approximation of a compact set
-
-
-![](assets/filtration1.png)
-
-
----
-
-
-class: center, middle
-
-
-
-
-# Approximation of a compact set
-
-
-![](assets/filtration2.png)
-
-
----
-
-
-class: center, middle
-
-
-
-
-# Approximation of a compact set
-
-
-![](assets/filtration3.png)
-
-
----
-
-
 class: middle
 
 
@@ -398,14 +387,18 @@ using Random
 rng = MersenneTwister(72)
 
 function noisy_circle(rng, n, noise=0.05)
+
     x = zeros(n)
     y = zeros(n)
+    θ = LinRange(0, 2π, n+1)[1:end-1]
+
     for i in 1:n
-        θ = 2π * rand(rng)
-        x[i] = cos(θ) + 2 * noise * (rand(rng) - 0.5)
-        y[i] = sin(θ) + 2 * noise * (rand(rng) - 0.5)
+        x[i] = cos(θ[i]) + 2 * noise * (rand(rng) - 0.5)
+        y[i] = sin(θ[i]) + 2 * noise * (rand(rng) - 0.5)
     end
+
     return vcat(x', y')
+
 end
 ```
 
@@ -419,13 +412,98 @@ noisy_circle (generic function with 2 methods)
 
 
 ```julia
-nc = noisy_circle(rng, 1000)
-points = hcat(nc, 0.5 .* nc )
-scatter(points[1,:], points[2,:]; aspect_ratio=1, legend=false, title="noisy circles")
+points = hcat(noisy_circle(rng, 1000) , 0.5 .* noisy_circle(rng, 500) )
+centers, labels = kmeans(points', 2)
+scatter( points[1,:], points[2,:], group=labels)
+scatter!( Tuple.(centers), m = :star, ms = 10, c = :yellow, aspect_ratio=1)
 ```
 
 
 ![](plot2.svg)
+
+
+---
+
+
+
+
+
+
+# Topological data analysis
+
+
+
+
+
+
+# *Data have shape, shape has meaning, meaning brings value.*
+
+
+
+
+
+
+# Point cloud => Topological descriptor => Inference
+
+
+---
+
+
+class: center, middle
+
+
+
+
+
+
+# Build filtered complex of the point cloud
+
+
+![](assets/filtration1.png)
+
+
+---
+
+
+class: center, middle
+
+
+
+
+# Build filtered complex of the point cloud
+
+
+![](assets/filtration2.png)
+
+
+---
+
+
+class: center, middle
+
+
+
+
+# Build filtered complex of the point cloud
+
+
+![](assets/filtration3.png)
+
+
+---
+
+
+class: center, middle
+
+
+
+
+
+
+# Example: The Ball-Mapper algorithm
+
+
+[Davide Gurnari](https://dioscuri-tda.org/Paris_TDA_Tutorial_2021.html)
 
 
 ---
@@ -465,26 +543,26 @@ centers = find_centers( points, ϵ )
 
 
 ```
-Dict{Int64, Int64} with 37 entries:
-  5  => 5
-  16 => 25
-  20 => 50
-  35 => 1029
-  12 => 15
-  24 => 108
-  28 => 1003
-  8  => 10
-  17 => 28
-  30 => 1007
-  1  => 1
-  19 => 38
-  22 => 70
-  23 => 75
-  6  => 6
-  32 => 1013
-  11 => 14
-  36 => 1249
-  37 => 1347
+Dict{Int64, Int64} with 44 entries:
+  5  => 129
+  35 => 1169
+  30 => 1001
+  32 => 1068
+  6  => 163
+  4  => 94
+  13 => 402
+  12 => 367
+  28 => 906
+  23 => 739
+  41 => 1370
+  43 => 1437
+  11 => 333
+  36 => 1203
+  39 => 1304
+  7  => 199
+  25 => 805
+  34 => 1139
+  2  => 33
   ⋮  => ⋮
 ```
 
@@ -493,17 +571,15 @@ Dict{Int64, Int64} with 37 entries:
 
 
 ```julia
-idxs = collect(values(centers))
-p = scatter(points[1,idxs], points[2,idxs]; aspect_ratio=1, label="centers")
 function ball(h, k, r)
     θ = LinRange(0, 2π, 500)
     h .+ r * sin.(θ), k .+ r * cos.(θ)
 end
-for i in idxs
-    plot!(p, ball(points[1,i], points[2,i], ϵ), seriestype = [:shape,], lw = 0.5, c = :blue,
-            linecolor = :black, legend = false, fillalpha = 0.1, aspect_ratio = 1)
+scatter(points[1,:], points[2,:]; aspect_ratio=1,  label = "points", ms = 2)
+for i in values(centers)
+    plot!(ball(points[1,i], points[2,i], ϵ), seriestype = [:shape,], lw = 0.5, c = :blue,
+            linecolor = :black, legend = false, fillalpha = 0.1)
 end
-scatter!(p, points[1,:], points[2,:]; aspect_ratio=1, ms = 2)
 ```
 
 
@@ -514,45 +590,113 @@ scatter!(p, points[1,:], points[2,:]; aspect_ratio=1, ms = 2)
 
 
 ```julia
-function compute_points_covered_by_landmarks( points, centers :: Dict{Int, Int}, ϵ)
+function compute_points_covered_by_landmarks( points, centers, ϵ)
+
     points_covered_by_landmarks = Dict{Int,Vector{Int}}()
-    for idx_v in values(centers)
+
+    for idx_v in keys(centers)
+
         points_covered_by_landmarks[idx_v] = Int[]
+
         for (idx_p, p) in enumerate(eachcol(points))
-            distance = norm(p .- points[:,idx_v])
+
+            distance = norm(p .- points[:,centers[idx_v]])
+
             if distance <= ϵ
                 push!(points_covered_by_landmarks[idx_v], idx_p)
             end
+
         end
+
     end
+
     return sort(points_covered_by_landmarks)
+
 end
+
 points_covered_by_landmarks = compute_points_covered_by_landmarks( points, centers, ϵ)
 ```
 
 
 ```
-OrderedCollections.OrderedDict{Int64, Vector{Int64}} with 37 entries:
-  1  => [1, 33, 42, 47, 48, 78, 112, 115, 117, 136  …  749, 778, 792, 841, 869,…
-  2  => [2, 22, 32, 49, 59, 61, 68, 76, 102, 113  …  760, 763, 803, 817, 824, 8…
-  3  => [3, 8, 36, 37, 100, 139, 164, 169, 175, 181  …  853, 870, 899, 909, 918…
-  4  => [4, 9, 22, 32, 61, 76, 93, 102, 110, 130  …  791, 803, 822, 833, 846, 8…
-  5  => [5, 33, 51, 63, 73, 82, 112, 115, 121, 136  …  838, 855, 869, 908, 912,…
-  6  => [6, 11, 58, 77, 81, 89, 137, 167, 187, 198  …  871, 872, 898, 933, 945,…
-  7  => [7, 60, 94, 104, 106, 123, 143, 184, 188, 221  …  890, 905, 906, 916, 9…
-  10 => [10, 97, 183, 198, 200, 209, 222, 232, 256, 263  …  942, 945, 947, 948,…
-  12 => [12, 40, 52, 56, 64, 80, 87, 146, 193, 212  …  807, 830, 832, 845, 903,…
-  13 => [13, 18, 19, 27, 44, 66, 84, 90, 103, 114  …  839, 840, 867, 873, 881, …
-  14 => [14, 21, 29, 57, 72, 95, 124, 137, 171, 180  …  852, 859, 872, 888, 898…
-  15 => [15, 17, 24, 30, 88, 91, 106, 152, 161, 170  …  810, 826, 835, 851, 876…
-  16 => [16, 26, 31, 41, 43, 46, 54, 55, 62, 67  …  856, 866, 868, 882, 883, 90…
-  20 => [20, 52, 64, 69, 71, 87, 111, 179, 193, 212  …  801, 815, 830, 842, 845…
-  23 => [23, 42, 78, 79, 120, 142, 145, 153, 190, 192  …  721, 724, 812, 841, 8…
-  25 => [25, 34, 45, 85, 86, 97, 98, 128, 132, 134  …  921, 923, 929, 931, 932,…
-  28 => [18, 19, 26, 28, 43, 54, 67, 92, 109, 118  …  866, 873, 883, 910, 937, …
-  35 => [35, 39, 49, 59, 65, 68, 99, 113, 116, 149  …  793, 806, 817, 824, 854,…
-  38 => [38, 74, 101, 105, 122, 135, 141, 155, 157, 194  …  850, 857, 864, 875,…
+OrderedCollections.OrderedDict{Int64, Vector{Int64}} with 44 entries:
+  1  => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  991, 992, 993, 994, 995, 996, 997, 9…
+  2  => [4, 6, 8, 10, 11, 12, 13, 14, 15, 16  …  58, 59, 60, 61, 62, 63, 65, 66…
+  3  => [34, 35, 42, 43, 44, 45, 46, 47, 48, 49  …  91, 92, 93, 95, 96, 97, 98,…
+  4  => [69, 70, 73, 74, 75, 76, 77, 78, 79, 80  …  127, 128, 130, 132, 133, 13…
+  5  => [107, 108, 109, 110, 111, 112, 113, 114, 115, 116  …  158, 159, 160, 16…
+  6  => [139, 140, 142, 143, 146, 147, 148, 149, 150, 151  …  191, 192, 193, 19…
+  7  => [171, 172, 173, 174, 175, 177, 178, 179, 180, 181  …  225, 226, 227, 23…
+  8  => [200, 201, 207, 208, 209, 210, 211, 212, 213, 214  …  258, 259, 260, 26…
+  9  => [237, 238, 240, 242, 243, 244, 245, 246, 247, 248  …  289, 290, 291, 29…
+  10 => [271, 275, 276, 277, 278, 279, 280, 281, 282, 283  …  325, 326, 327, 32…
+  11 => [297, 300, 304, 305, 306, 307, 309, 310, 311, 312  …  359, 360, 361, 36…
+  12 => [340, 343, 345, 346, 348, 349, 350, 351, 352, 353  …  394, 395, 396, 39…
+  13 => [375, 378, 379, 380, 381, 382, 385, 387, 388, 389  …  433, 434, 435, 43…
+  14 => [410, 414, 415, 417, 418, 419, 420, 421, 422, 423  …  468, 469, 470, 47…
+  15 => [444, 445, 447, 448, 449, 450, 451, 452, 453, 454  …  493, 494, 495, 49…
+  16 => [482, 484, 485, 486, 487, 488, 489, 490, 491, 492  …  528, 529, 530, 53…
+  17 => [500, 505, 507, 508, 509, 510, 511, 512, 513, 514  …  561, 562, 563, 56…
+  18 => [537, 539, 540, 541, 542, 543, 544, 546, 547, 548  …  595, 596, 597, 59…
+  19 => [575, 576, 578, 579, 580, 581, 582, 583, 584, 586  …  633, 634, 635, 63…
   ⋮  => ⋮
+```
+
+
+---
+
+
+```julia
+function compute_edges(points_covered_by_landmarks)
+
+    edges = Tuple{Int,Int}[]
+
+    idxs = collect(keys(points_covered_by_landmarks)) # centers
+
+    for (i, idx_v) in enumerate(idxs[1:end-1])
+
+        p_v = points_covered_by_landmarks[idx_v]
+
+        for idx_u in idxs[i+1:end]
+
+            if !isdisjoint( p_v, points_covered_by_landmarks[idx_u])
+
+                push!(edges, (idx_v,idx_u))
+
+            end
+
+        end
+
+    end
+    edges
+end
+
+edges = compute_edges(points_covered_by_landmarks)
+```
+
+
+```
+46-element Vector{Tuple{Int64, Int64}}:
+ (1, 2)
+ (1, 29)
+ (2, 3)
+ (3, 4)
+ (4, 5)
+ (5, 6)
+ (6, 7)
+ (7, 8)
+ (8, 9)
+ (9, 10)
+ ⋮
+ (36, 37)
+ (37, 38)
+ (38, 39)
+ (39, 40)
+ (40, 41)
+ (41, 42)
+ (41, 43)
+ (42, 43)
+ (43, 44)
 ```
 
 
@@ -562,33 +706,109 @@ OrderedCollections.OrderedDict{Int64, Vector{Int64}} with 37 entries:
 ```julia
 using RecipesBase
 
-@userplot GraphPlot
+@userplot EdgesPlot
 
-@recipe function f(gp::GraphPlot)
+@recipe function f(gp::EdgesPlot)
 
-    points, points_covered_by_landmarks = gp.args
-
+    points, centers, points_covered_by_landmarks = gp.args
+    idxs = collect(values(centers))
     aspect_ratio := 1
-    idxs = collect(keys(points_covered_by_landmarks)) # centers
 
     @series begin
+
         seriestype := :scatter
         points[1,idxs], points[2,idxs]
+
     end
 
-    for (i, idx_v) in enumerate(idxs[1:end-1]), idx_u in idxs[i+1:end]
-        if !isdisjoint(points_covered_by_landmarks[idx_v], points_covered_by_landmarks[idx_u])
-            x1, y1 = points[:,idx_v]
-            x2, y2 = points[:,idx_u]
-            @series begin
-                color := :black
-                legend := false
-                [x1, x2], [y1, y2]
-            end
+    for (e1,e2) in compute_edges(points_covered_by_landmarks)
+
+        x1, y1 = points[:,centers[e1]]
+        x2, y2 = points[:,centers[e2]]
+
+        @series begin
+            color --> :black
+            legend := false
+            [x1, x2], [y1, y2]
+        end
+
+    end
+end
+```
+
+
+.footnote[[Daniel Schwabeneder - How do Recipes actually work?](https://daschw.github.io/recipes/)]
+
+
+---
+
+
+class: center, middle
+
+
+```julia
+edgesplot(points, centers, points_covered_by_landmarks)
+```
+
+
+![](plot4.svg)
+
+
+---
+
+
+```julia
+function compute_colors( points, points_covered_by_landmarks)
+
+    edges = compute_edges(points_covered_by_landmarks)
+    nc = length(keys(points_covered_by_landmarks))
+    center_colors = collect(1:nc)
+
+    for i in 1:nc
+        for (e1,e2) in edges
+            center_colors[e2] = center_colors[e1]
         end
     end
 
+    n = size(points, 2)
+    colors = zeros(Int, n)
+
+    for c in keys(centers)
+        for (e1, e2) in edges
+            colors[points_covered_by_landmarks[c]] .= center_colors[c]
+        end
+    end
+
+    colors
+
 end
+
+colors = compute_colors( points, points_covered_by_landmarks)
+```
+
+
+```
+1500-element Vector{Int64}:
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  ⋮
+ 30
+ 30
+ 30
+ 30
+ 30
+ 30
+ 30
+ 30
+ 30
 ```
 
 
@@ -596,11 +816,34 @@ end
 
 
 ```julia
-graphplot(points, points_covered_by_landmarks)
+scatter(points[1,:], points[2, :], group = colors, aspect_ratio=1, legend = false)
 ```
 
 
-![](plot4.svg)
+![](plot5.svg)
+
+
+---
+
+
+
+
+
+
+# TDA algorithms
+
+
+  * Cluster merging phase using density map.
+  * Use of topological persistence to guide the merging of clusters.
+
+
+[Ripserer.jl](https://mtsch.github.io/Ripserer.jl/dev/generated/stability/)
+
+
+[TDA example in Julia](https://github.com/pnavaro/IntroToTDA.jl/blob/main/Trees_In_Philly_Old_City.ipynb)
+
+
+[Steve Oudot et al - Topological Mode Analysis Tool](https://geometrica.saclay.inria.fr/data/Steve.Oudot/clustering/)
 
 
 ---
@@ -649,7 +892,11 @@ end
 ] ]
 
 
----
+
+
+
+
+## .footnote[[ClusteringToMaTo.jl](https://github.com/pnavaro/ClusteringToMATo.jl)]
 
 
 class: center, middle
@@ -665,21 +912,5 @@ class: center, middle
 ![](assets/evol_ssniv.gif)
 
 
----
-
-
-class: center, middle
-
-
-
-
-
-
-# Packages in progress
-
-
-https://github.com/pnavaro/GeometricClusterAnalysis.jl
-
-
-https://github.com/pnavaro/ClusteringToMATo.jl
+.footnote[[GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl)]
 

@@ -66,3 +66,8 @@ h1, h2, h3 {
 .fifty {
    flex: 50%;
 }
+.footnote {
+        position: absolute;
+        bottom: 3em;
+      }
+
