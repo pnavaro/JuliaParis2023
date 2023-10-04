@@ -583,14 +583,16 @@ end
 ]
 
 .footnote[[ClusteringToMaTo.jl](https://github.com/pnavaro/ClusteringToMATo.jl)]
+
 ---
 
 class: center, middle
 
-# Clustering with unions of ellipsoids 
+# Noisy data clustering with unions of ellipsoids 
 
 ![](assets/evol_ssniv.gif)
 
-.footnote[[GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl)]
+.footnote[[GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl)] (package on progress)
 
 
+---
