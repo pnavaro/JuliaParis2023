@@ -44,9 +44,17 @@ We look for the centers ``\mathbf{c}*`` that minimize the $k$-means loss functio
 # Algorithm
 
 - Initialize k centroids.
+
+
 - Calculate the distance of every point to every centroid.
+
+
 - Assign every point to a cluster, by choosing the centroid with the minimum distance to the point.
+
+
 - Recalculate the centroids using the mean of the assigned points.
+
+
 - Repeat the steps until reaching convergence. 
 
 ---
