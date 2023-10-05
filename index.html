@@ -43,7 +43,7 @@ This is a joint work with [*Claire Brécheteau*](https://brecheteau.perso.math.c
 # The $k$-means method
 
 
-$P$ distribution on $\mathbb{R}^d$
+Dataset $X_1, X_2, \cdots, X_n$ distribution on $\mathbb{R}^d$
 
 
 $$
@@ -51,11 +51,11 @@ $$
 $$
 
 
-The optimal codebook $\mathbf{c}^*$ minimizes the $k$-means loss function 
+We look for the centers $\mathbf{c}*$ that minimize the $k$-means loss function 
 
 
 $$
-R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
+\frac{1}{n} \sum_{i=1}^n \min(j=1..k) \|\|X_i-c_j\|\|^2
 $$
 
 
@@ -367,7 +367,7 @@ kmeans (generic function with 1 method)
 ```julia
 using Plots, CluGen
 
-o = clugen(2, 3, 1000, [1, 1], pi / 8, [10, 10], 10, 2, 1)
+o = clugen(2, 3, 1000, [1, 1], pi / 8, [10, 10], 10, 2, 1) # cluster generation
 centers, labels = kmeans(o.points, 3)
 scatter( o.points[:,1], o.points[:,2], group=labels)
 scatter!( Tuple.(centers), m = :star, ms = 10, c = :yellow, label = "centers")
@@ -471,6 +471,9 @@ class: center, middle
 ![](assets/filtration1.png)
 
 
+.footnote[figures : [Fredéric Chazal](https://geometrica.saclay.inria.fr/team/Fred.Chazal/)]
+
+
 ---
 
 
@@ -485,6 +488,9 @@ class: center, middle
 ![](assets/filtration2.png)
 
 
+.footnote[figures : [Fredéric Chazal](https://geometrica.saclay.inria.fr/team/Fred.Chazal/)]
+
+
 ---
 
 
@@ -497,6 +503,9 @@ class: center, middle
 
 
 ![](assets/filtration3.png)
+
+
+.footnote[figures : [Fredéric Chazal](https://geometrica.saclay.inria.fr/team/Fred.Chazal/)]
 
 
 ---
@@ -551,31 +560,6 @@ centers = find_centers( points, ϵ )
 ```
 
 
-```
-Dict{Int64, Int64} with 44 entries:
-  5  => 129
-  35 => 1169
-  30 => 1001
-  32 => 1068
-  6  => 163
-  4  => 94
-  13 => 402
-  12 => 367
-  28 => 906
-  23 => 739
-  41 => 1370
-  43 => 1437
-  11 => 333
-  36 => 1203
-  39 => 1304
-  7  => 199
-  25 => 805
-  34 => 1139
-  2  => 33
-  ⋮  => ⋮
-```
-
-
 ---
 
 
@@ -627,31 +611,6 @@ points_covered_by_landmarks = compute_points_covered_by_landmarks( points, cente
 ```
 
 
-```
-OrderedCollections.OrderedDict{Int64, Vector{Int64}} with 44 entries:
-  1  => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  991, 992, 993, 994, 995, 996, 997, 9…
-  2  => [4, 6, 8, 10, 11, 12, 13, 14, 15, 16  …  58, 59, 60, 61, 62, 63, 65, 66…
-  3  => [34, 35, 42, 43, 44, 45, 46, 47, 48, 49  …  91, 92, 93, 95, 96, 97, 98,…
-  4  => [69, 70, 73, 74, 75, 76, 77, 78, 79, 80  …  127, 128, 130, 132, 133, 13…
-  5  => [107, 108, 109, 110, 111, 112, 113, 114, 115, 116  …  158, 159, 160, 16…
-  6  => [139, 140, 142, 143, 146, 147, 148, 149, 150, 151  …  191, 192, 193, 19…
-  7  => [171, 172, 173, 174, 175, 177, 178, 179, 180, 181  …  225, 226, 227, 23…
-  8  => [200, 201, 207, 208, 209, 210, 211, 212, 213, 214  …  258, 259, 260, 26…
-  9  => [237, 238, 240, 242, 243, 244, 245, 246, 247, 248  …  289, 290, 291, 29…
-  10 => [271, 275, 276, 277, 278, 279, 280, 281, 282, 283  …  325, 326, 327, 32…
-  11 => [297, 300, 304, 305, 306, 307, 309, 310, 311, 312  …  359, 360, 361, 36…
-  12 => [340, 343, 345, 346, 348, 349, 350, 351, 352, 353  …  394, 395, 396, 39…
-  13 => [375, 378, 379, 380, 381, 382, 385, 387, 388, 389  …  433, 434, 435, 43…
-  14 => [410, 414, 415, 417, 418, 419, 420, 421, 422, 423  …  468, 469, 470, 47…
-  15 => [444, 445, 447, 448, 449, 450, 451, 452, 453, 454  …  493, 494, 495, 49…
-  16 => [482, 484, 485, 486, 487, 488, 489, 490, 491, 492  …  528, 529, 530, 53…
-  17 => [500, 505, 507, 508, 509, 510, 511, 512, 513, 514  …  561, 562, 563, 56…
-  18 => [537, 539, 540, 541, 542, 543, 544, 546, 547, 548  …  595, 596, 597, 59…
-  19 => [575, 576, 578, 579, 580, 581, 582, 583, 584, 586  …  633, 634, 635, 63…
-  ⋮  => ⋮
-```
-
-
 ---
 
 
@@ -681,31 +640,6 @@ function compute_edges(points_covered_by_landmarks)
 end
 
 edges = compute_edges(points_covered_by_landmarks)
-```
-
-
-```
-46-element Vector{Tuple{Int64, Int64}}:
- (1, 2)
- (1, 29)
- (2, 3)
- (3, 4)
- (4, 5)
- (5, 6)
- (6, 7)
- (7, 8)
- (8, 9)
- (9, 10)
- ⋮
- (36, 37)
- (37, 38)
- (38, 39)
- (39, 40)
- (40, 41)
- (41, 42)
- (41, 43)
- (42, 43)
- (43, 44)
 ```
 
 
@@ -796,31 +730,6 @@ colors = compute_colors( points, points_covered_by_landmarks)
 ```
 
 
-```
-1500-element Vector{Int64}:
-  1
-  1
-  1
-  1
-  1
-  1
-  1
-  1
-  1
-  1
-  ⋮
- 30
- 30
- 30
- 30
- 30
- 30
- 30
- 30
- 30
-```
-
-
 ---
 
 
@@ -898,6 +807,9 @@ end
 ![tomato](assets/algorithm-tomato.png)
 
 
+[Chazal, F., Guibas, L. J., Oudot, S. Y., and Skraba, P. 2011. Persistence-Based Clustering in Riemannian Manifolds. J. ACM 60, 6, Article A (January 2013)](https://geometrica.saclay.inria.fr/data/Steve.Oudot/clustering/jacm_oudot.pdf)
+
+
 ] ]
 
 
@@ -920,7 +832,7 @@ class: center, middle
 ![](assets/evol_ssniv.gif)
 
 
-C. Brécheteau & P. Navaro - [GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl) (package on progress)
+C. Brécheteau & P. Navaro - [GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl) (work in progress)
 
 
 ---
