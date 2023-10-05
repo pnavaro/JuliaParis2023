@@ -26,16 +26,17 @@
 
 # The $k$-means method
 
-``P`` distribution on ``\mathbb{R}^d``
+Dataset ``X_1, X_2, \cdots, X_n`` distribution on ``\mathbb{R}^d``
 
 ```math
 \mathbf{c}= (c_1,c_2,\ldots,c_k) \in (\mathbb{R}^d)^k
 ```
 
-The optimal codebook $\mathbf{c}^*$ minimizes the $k$-means loss function 
+We look for the centers ``\mathbf{c}*`` that minimize the $k$-means loss function 
+
 
 ```math
-R : \mathbf{c}\mapsto P\min_{i = 1..k}\|\cdot-c_i\|^2.
+\frac{1}{n} \sum_{i=1}^n \min(j=1..k) \|\|X_i-c_j\|\|^2
 ```
 
 ---
@@ -225,9 +226,9 @@ end
 ---
 
 ```@example paris
-using Plots, CluGen
+using Plots, CluGen 
 
-o = clugen(2, 3, 1000, [1, 1], pi / 8, [10, 10], 10, 2, 1)
+o = clugen(2, 3, 1000, [1, 1], pi / 8, [10, 10], 10, 2, 1) # cluster generation
 centers, labels = kmeans(o.points, 3)
 scatter( o.points[:,1], o.points[:,2], group=labels)
 scatter!( Tuple.(centers), m = :star, ms = 10, c = :yellow, label = "centers")
@@ -289,12 +290,13 @@ nothing # hide
 
 ---
 
-
 class: center, middle
 
 # Build filtered complex of the point cloud
 
 ![](assets/filtration1.png)
+
+.footnote[figures : [Fredéric Chazal](https://geometrica.saclay.inria.fr/team/Fred.Chazal/)]
 
 ---
 
@@ -304,6 +306,8 @@ class: center, middle
 
 ![](assets/filtration2.png)
 
+.footnote[figures : [Fredéric Chazal](https://geometrica.saclay.inria.fr/team/Fred.Chazal/)]
+
 ---
 
 class: center, middle
@@ -312,6 +316,7 @@ class: center, middle
 
 ![](assets/filtration3.png)
 
+.footnote[figures : [Fredéric Chazal](https://geometrica.saclay.inria.fr/team/Fred.Chazal/)]
 
 ---
 
@@ -354,6 +359,7 @@ end
 
 ϵ = 0.2
 centers = find_centers( points, ϵ )
+nothing # hide
 ```
 
 ---
@@ -404,6 +410,7 @@ function compute_points_covered_by_landmarks( points, centers, ϵ)
 end
 
 points_covered_by_landmarks = compute_points_covered_by_landmarks( points, centers, ϵ)
+nothing # hide
 ```
 
 ----
@@ -434,7 +441,7 @@ function compute_edges(points_covered_by_landmarks)
 end
 
 edges = compute_edges(points_covered_by_landmarks)
-
+nothing # hide
 ```
 
 ----
@@ -515,6 +522,7 @@ function compute_colors( points, points_covered_by_landmarks)
 end
 
 colors = compute_colors( points, points_covered_by_landmarks)
+nothing # hide
 ```
 
 ---
@@ -579,6 +587,8 @@ end
 
 ![tomato](assets/algorithm-tomato.png)
 
+[Chazal, F., Guibas, L. J., Oudot, S. Y., and Skraba, P. 2011. Persistence-Based Clustering in Riemannian Manifolds. J. ACM 60, 6, Article A (January 2013)](https://geometrica.saclay.inria.fr/data/Steve.Oudot/clustering/jacm_oudot.pdf)
+
 ]
 ]
 
@@ -592,7 +602,7 @@ class: center, middle
 
 ![](assets/evol_ssniv.gif)
 
-C. Brécheteau & P. Navaro - [GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl) (package on progress)
+C. Brécheteau & P. Navaro - [GeometricClusterAnalysis.jl](https://github.com/pnavaro/GeometricClusterAnalysis.jl) (work in progress)
 
 
 ---
