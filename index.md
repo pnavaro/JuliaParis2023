@@ -18,7 +18,7 @@
 French community newsletter about Julia language : https://pnavaro.github.io/NouvellesJulia
 
 
-Slides : https://pnavaro.github.io/pnavaro/JuliaParis2023
+Slides : https://pnavaro.github.io/JuliaParis2023
 
 
 This is a joint work with [*Claire Brécheteau*](https://brecheteau.perso.math.cnrs.fr/page/index.html)  from Ecole Centrale de Nantes.
