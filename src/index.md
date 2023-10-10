@@ -2,7 +2,7 @@
 
  - My name is *Pierre Navaro*
 
- - Scientific Computing Engineer at Insitut de Recherche Mathématique de Rennes
+ - Scientific Computing Engineer at Institut de Recherche Mathématique de Rennes
 
  - Staff member of [Groupe Calcul](https://calcul.math.cnrs.fr) which promote exchanges within the scientific computing community.
 
@@ -16,7 +16,7 @@
 
  French community newsletter about Julia language : https://pnavaro.github.io/NouvellesJulia
 
- Slides : https://pnavaro.github.io/JuliaParis2023
+ Slides : https://github.com/pnavaro/JuliaParis2023
 
  This is a joint work with [*Claire Brécheteau*](https://brecheteau.perso.math.cnrs.fr/page/index.html)
  from Ecole Centrale de Nantes.
